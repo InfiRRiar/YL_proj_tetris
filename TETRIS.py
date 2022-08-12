@@ -25,9 +25,9 @@ def terminate():
 
 def points_render():  # отображение очков
     font = pygame.font.Font(None, 60)
-    string_rendered = font.render(points_text, 1, pygame.Color('yellow'))
+    string_rendered = font.render(points_text, True, pygame.Color('yellow'))
     screen.blit(string_rendered, (857, 10))
-    string_rendered = font.render(str(points), 1, pygame.Color('yellow'))
+    string_rendered = font.render(str(points), True, pygame.Color('yellow'))
     screen.blit(string_rendered, (857, 60))
 
 
@@ -491,7 +491,7 @@ can_rotate = True
 board = Board()
 tetr = Tetromino()
 
-spawn_speed = 1
+spawn_speed = 0.35
 speed_count = 1
 start_screen()  # отображение стартового экрана
 while True:
