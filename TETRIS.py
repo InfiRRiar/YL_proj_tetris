@@ -111,7 +111,6 @@ class Tetromino():
                     a += 1
                     tiles.append((i, j))
         if a > 3:
-            print(self.rot)
             if self.rot % 2 == 0:
                 if self.tetro_tiles[tiles[0][0] + 2][tiles[0][1] + 2] == 0 and \
                         self.tetro_tiles[tiles[1][0] + 1][tiles[1][1] + 1] == 0 and \
@@ -323,77 +322,50 @@ class Tetromino():
                     pygame.draw.rect(screen, pygame.Color("blue"), (j * 50, i * 50, 50, 50), 0)
 
     def gravity(self):  # смещение активного тетромино вниз
+        global tetromino_spawn
         can_fall = 0  # сколько клеток активного тетромино могут сместиться вниз. Если все - то тетромино смещается
         tiles_transform = list()
         self.tetromino_active = list()
-        for i in range(len(self.tetro_tiles) - 1, -1, -1):
+        for i in range(len(self.tetro_tiles) - 2, -1, -1):
             for j in range(len(self.tetro_tiles[i]) - 1, -1, -1):
-                if i < len(self.tetro_tiles) - 1 and self.tetro_tiles[i + 1][j] != 5 and self.tetro_tiles[i][j] == 1:
-                    # если клетка не в самом низу и под ней нет препятствия - она може упасть
+                if self.tetro_tiles[i + 1][j] != 5 and self.tetro_tiles[i][j] == 1:
+                    # если клетка не в самом низу и под ней нет препятствия - она может упасть
                     can_fall += 1
                     tiles_transform.append((i, j))  # создается список для передаче в Board,
                     # чтобы игровое поле в классе Board тоже изменилось
-        if can_fall > 3:  # если все клетки тетрамино могут сместиться вниз - смещается
+        if can_fall == 4:  # если все клетки тетрамино могут сместиться вниз - смещается
             for i in tiles_transform:
-                self.tetro_tiles[i[0] + 1][i[1]] = 1
                 self.tetro_tiles[i[0]][i[1]] = 0
-        else:  # иначе тетрамино тетрамино считается упавшим, нужно, чтобы появилось новое
+                self.tetro_tiles[i[0] + 1][i[1]] = 1
+        else:  # иначе тетрамино считается упавшим, нужно, чтобы появилось новое
+            tetromino_spawn = True
             return self.tetromino_change()  # значение передастся в класс Board, чтобы затем отрендерится.
             # Что это объясняется в следующем методе
         return 0
 
     def tetromino_change(self):  # тетрамино делается неактивным (чтобы его нельзя было двигать, вращать и т.д.)
-        global points, tetromino_spawn
+        global points
         for i in range(len(self.tetro_tiles) - 1, -1, -1):
             for j in range(len(self.tetro_tiles[i]) - 1, -1, -1):
                 if self.tetro_tiles[i][j] == 1:  # 1 - клетка активного тетромино
                     self.tetromino_active.append((i, j))
+                    self.tetro_tiles[i][j] = 5
         points += 10
-        for i in range(len(self.tetromino_active)):
-            self.tetro_tiles[self.tetromino_active[i][0]][
-                self.tetromino_active[i][1]] = 5  # 5 - клетка тетрамино, которые упали
-        tetromino_spawn = True  # ПОТЕНЦИАЛНЬНО НА УДАЛЕНИЕ
-        tetr.tetromino_spawn()
         return self.tetromino_active  # значение передастся в класс Board, чтобы затем отрендерится.
 
-    def move_down(self):  # метод, чтобы пользователь мог ускорить падение
-        tile_can_move = 0  # принци такой же, как в gravity
-        if 1 not in self.tetro_tiles[-1]:
-            for i in range(len(self.tetro_tiles) - 2, -1, -1):
-                for j in range(len(self.tetro_tiles[i]) - 1, -1, -1):
-                    if self.tetro_tiles[i + 1][j] != 5 and self.tetro_tiles[i][j] == 1:
-                        tile_can_move += 1
-            if tile_can_move > 3:
-                for i in range(len(self.tetro_tiles) - 1, -1, -1):
-                    for j in range(len(self.tetro_tiles[i]) - 1, -1, -1):
-                        if self.tetro_tiles[i][j] == 1:
-                            self.tetro_tiles[i][j] = 0
-                            self.tetro_tiles[i + 1][j] = -1
-                for i in range(len(self.tetro_tiles) - 1, -1, -1):
-                    for j in range(len(self.tetro_tiles[i]) - 1, -1, -1):
-                        if self.tetro_tiles[i][j] == -1:
-                            self.tetro_tiles[i][j] = 1
-
-    def full_line_check(self):  # чек, заполнена ли какая-либо линия полностью и удаление этой линии
+    def full_line_check(self):  # чек, заполнена ли какая-либо линия полностью
         global points
-        dissapeared_tiles = list()
+        disappeared_rows = list()
         for i in range(1, len(self.tetro_tiles)):
-            if 0 not in self.tetro_tiles[i]:  # если нашлась линия в которой не свободного пространства
+            if 0 not in self.tetro_tiles[i]:  # если нашлась линия в которой неn свободного пространства
                 points += 100
-                for j in range(len(self.tetro_tiles[i])):
-                    dissapeared_tiles.append((i, j))  # клетка, которые исчезнут
-        return dissapeared_tiles
+                disappeared_rows.append(i)
+        return disappeared_rows
 
-    def line_dissapear(self, tiles):  # линии над исчезнувшей должны "упасть" на место исчезнувшей линии
-        lines = list()  # список линий, которые должны упасть
-        for i in tiles:
-            self.tetro_tiles[i[0]][i[1]] = 0
-            if i[0] not in lines:
-                lines.append(i[0])
-        for i in lines:
-            for j in range(i, 0, -1):
-                self.tetro_tiles[j] = self.tetro_tiles[j - 1]  # строка спускается на уровень ниже
-        self.tetro_tiles[0] = [0] * 17  # так и не понял почему, но без этой строки все ломается :-)
+    def line_disappear(self, rows):  # линии над исчезнувшей должны "упасть" на место исчезнувшей линии
+        for disappeared_row in rows:
+            for i in range(disappeared_row - 1, 0, -1):
+                self.tetro_tiles[i + 1] = self.tetro_tiles[i].copy()
 
     def move(self, move_side):  # движение влево - вправо
         tile_can_move = 0
@@ -434,16 +406,10 @@ class Board:
         for i in tiles:
             self.board[i[0]][i[1]] = 1
 
-    def line_dissapear(self, tiles):  # тоже падение линий вниз, но уже в этом классе для рэндера
-        lines = list()
-        for i in tiles:
-            self.board[i[0]][i[1]] = 0
-            if i[0] not in lines:
-                lines.append(i[0])
-        for i in lines:
-            for j in range(i, 0, -1):
-                self.board[j] = self.board[j - 1]
-        self.board[0] = [0] * 17
+    def line_dissapear(self, rows):  # тоже падение линий вниз, но уже в этом классе для рэндера
+        for disappeared_row in rows:
+            for i in range(disappeared_row - 1, 0, -1):
+                self.board[i + 1] = self.board[i].copy()
 
     def tile_render(self, screen):  # рэндер всего, кроме падающего тетромино
         for i in range(len(self.board)):
@@ -453,18 +419,14 @@ class Board:
                 elif self.board[i][j] == 1:  # если поле занято
                     pygame.draw.rect(screen, pygame.Color("blue"), (j * 50, i * 50, 50, 50), 0)
                     pygame.draw.rect(screen, pygame.Color("black"), (j * 50, i * 50, 50, 50), 1)
-        if 1 in self.board[1]:
-            print(1)
-            self.board = board.board = [[0] * 17 for _ in range(11)]
 
 
 def lose_check():  # при проигрыше сброс всех переменных
-    global game_tiles, tetro_tiles, time1, can_move_left, can_move_right, points, can_move_down
+    global game_tiles, tetro_tiles, time1
     if 5 in tetr.tetro_tiles[0]:
         start_screen()
         tetr.tetro_tiles = [[0] * 17 for _ in range(11)]
         time1 = time.time()
-        can_move_left, can_move_right, can_move_down = True, True, True
         points = 0
 
 
@@ -484,16 +446,14 @@ points = 0
 points_text = "POINTS"
 clock = pygame.time.Clock()
 
-tetro_tiles = [[0] * 17 for _ in range(11)]
 time1 = time.time()  # повторять после проигрыша
-can_move_left, can_move_right, can_move_down = True, True, True  # повторять после проигрыша
-can_rotate = True
 board = Board()
 tetr = Tetromino()
 
 spawn_speed = 0.35
 speed_count = 1
-start_screen()  # отображение стартового экрана
+start_screen()
+manual_fall = False
 while True:
     screen_update()
     if points >= speed_count * 500:
@@ -501,52 +461,26 @@ while True:
         speed_count += 1
     if tetromino_spawn:
         tetromino_spawn = False  # исчезновение (и вообще его чек) происходит перед спавном тетрамино нового
-        disapp_tiles = tetr.full_line_check()
-        if len(disapp_tiles) > 0:
-            tetr.line_dissapear(disapp_tiles)
-            board.line_dissapear(disapp_tiles)
+        disapp_rows = tetr.full_line_check()
+        if len(disapp_rows) > 0:
+            tetr.line_disappear(disapp_rows)
+            board.line_dissapear(disapp_rows)
+        tetr.tetromino_spawn()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             terminate()
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                if can_move_left:
-                    can_move_left = False
-                    move_side = -1
-                    tetr.move(move_side)
+                tetr.move(-1)
             elif event.key == pygame.K_RIGHT:
-                if can_move_right:
-                    can_move_right = False
-                    move_side = 1
-                    tetr.move(move_side)
-            elif event.key == pygame.K_DOWN:
-                if can_move_down:
-                    can_move_down = False
-                    tetr.move_down()
+                tetr.move(1)
             elif event.key == pygame.K_SPACE:
-                if can_rotate:
-                    can_rotate = False
-                    tetr.rotation()
+                tetr.rotation()
+            elif event.key == pygame.K_DOWN:
+                manual_fall = True
 
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                can_move_left = True
-                for i in range(len(tetro_tiles)):
-                    if tetro_tiles[i][0] == 1:
-                        can_move_left = False
-            if event.key == pygame.K_RIGHT:
-                can_move_right = True
-                for i in range(len(tetro_tiles)):
-                    if tetro_tiles[i][-1] == 1:
-                        can_move_right = False
-            if event.key == pygame.K_DOWN:
-                can_move_down = True
-                for i in range(len(tetro_tiles[0])):
-                    if tetro_tiles[-1][i] == 1:
-                        can_move_down = False
-            if event.key == pygame.K_SPACE:
-                can_rotate = True
-    if time.time() - time1 >= spawn_speed:  # тетромино падает каждые spawn_speed секунд
+    if time.time() - time1 >= spawn_speed or manual_fall:  # тетромино падает каждые spawn_speed секунд
+        manual_fall = False
         time1 = time.time()
         tetro_change = tetr.gravity()
         if tetro_change != 0:
